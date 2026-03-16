@@ -7,11 +7,10 @@
 
 #define IF_DIR 2
 volatile unsigned long start_time;
-volatile unsigned long actual_time;
 volatile uint8_t read_byte[255];
 volatile bool IF_DIR_level[255];
-volatile bool IF_DIR_int;
-volatile uint8_t pos;
+volatile bool IF_DIR_int_occurred;
+volatile uint8_t position;
 volatile bool proced_it;
 
 
@@ -32,6 +31,9 @@ void setup (void)
   SPCR |= _BV(CPOL);
   SPCR |= _BV(CPHA);
 
+  //LSB first
+  SPCR |= _BV(DORD);
+
   // turn on SPI interrupts
   SPCR |= _BV(SPIE);
 
@@ -44,36 +46,43 @@ void setup (void)
 // here SPI Buffer, I have something
 ISR (SPI_STC_vect)
 {
-  IF_DIR_level[pos] = digitalRead(IF_DIR);
-  read_byte[pos] = SPDR;
-  pos++;
+  IF_DIR_level[position] = digitalRead(IF_DIR);
+  read_byte[position] = SPDR;
+  position++;
 }
 
 // here interrupt INT0, a change in the monitored signal occurred
 void ISR0()
 {
   start_time = millis();
-  IF_DIR_int = true;
+  IF_DIR_int_occurred = true;
+}
+
+byte reverseBits(byte x) {
+  x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
+  x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
+  x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
+  return x;
 }
 
 void loop (void)
 {
   // 5 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen, we print the collected data
-  if (IF_DIR_int && millis() > start_time + 5)
+  if (IF_DIR_int_occurred && millis() > start_time + 5)
   {
     noInterrupts();
     // turn off SPI interrupts
     //SPCR &= ~(1 << SPIE);
 
-    for (int i = 0; i < pos; i++)
+    for (int i = 0; i < position; i++)
     {
       Serial.print (IF_DIR_level[i]);
       Serial.print (";");
-      Serial.println (read_byte[i], HEX);
+      Serial.println (read_byte[i], HEX);//(reverseBits(read_byte[i]), HEX);
     }
 
-    pos = 0;
-    IF_DIR_int = false;
+    position = 0;
+    IF_DIR_int_occurred = false;
     // turn on SPI interrupts
     //SPCR |= _BV(SPIE);
     interrupts();
