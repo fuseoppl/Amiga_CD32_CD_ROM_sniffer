@@ -1,6 +1,7 @@
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
+//Arduino GND    to Amiga CD32 GND
 
 #include "pins_arduino.h"
 
@@ -27,19 +28,20 @@ void setup (void)
   // turn on SPI in slave mode
   SPCR |= _BV(SPE);
 
-  // MODE 3
+  // SPI to MODE 3
   SPCR |= _BV(CPOL);
-  //SPCR |= _BV(CPHA);
-  
-  start_time = millis();
+  SPCR |= _BV(CPHA);
 
   // turn on SPI interrupts
   SPCR |= _BV(SPIE);
 
+  // clear interrupt register INT0
   EIFR |= (1<<INTF0);
+  // attach interrupt INT0
   attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR0, RISING);
 }
 
+// here SPI Buffer, I have something
 ISR (SPI_STC_vect)
 {
   IF_DIR_level[pos] = digitalRead(IF_DIR);
@@ -47,6 +49,7 @@ ISR (SPI_STC_vect)
   pos++;
 }
 
+// here interrupt INT0, a change in the monitored signal occurred
 void ISR0()
 {
   start_time = millis();
@@ -55,7 +58,8 @@ void ISR0()
 
 void loop (void)
 {
-  if (millis() > start_time + 5 && IF_DIR_int)
+  // 5 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen, we print the collected data
+  if (IF_DIR_int && millis() > start_time + 5)
   {
     noInterrupts();
     // turn off SPI interrupts
