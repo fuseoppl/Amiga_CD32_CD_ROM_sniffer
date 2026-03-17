@@ -12,7 +12,6 @@ volatile uint8_t read_byte[255];
 volatile bool IF_DIR_level[255];
 volatile bool IF_DIR_int_occurred;
 volatile uint8_t position;
-volatile bool proced_it;
 
 void setup (void)
 {
@@ -23,21 +22,21 @@ void setup (void)
   // have to send on master in, *slave out*
   pinMode(MISO, OUTPUT);
   
-  // turn on SPI in slave mode
+  // SPI slave mode on
   SPCR |= _BV(SPE);
 
-  // SPI to MODE 3
+  // SPI MODE 3
   SPCR |= _BV(CPOL);
   SPCR |= _BV(CPHA);
 
-  //LSB first
+  // SPI LSB first
   SPCR |= _BV(DORD);
 
-  // turn on SPI interrupts
+  // SPI interrupts on
   SPCR |= _BV(SPIE);
 
   // clear interrupt register INT0
-  EIFR |= (1 << INTF0);
+  //EIFR |= (1 << INTF0);
   // attach interrupt INT0
   attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR0, RISING);
 }
