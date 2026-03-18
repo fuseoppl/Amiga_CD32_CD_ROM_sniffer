@@ -1,4 +1,4 @@
-//CD32 Akiko-CDROM IF command sniffer v.1.1 (SPI buffer clearing not tested for proper operation)
+//CD32 Akiko-CDROM IF command sniffer v.1.2
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
@@ -22,21 +22,21 @@ void setup (void)
   // have to send on master in, *slave out*
   pinMode(MISO, OUTPUT);
   
-  // SPI slave mode on (MSTR = 0)
-  SPCR |= _BV(SPE);
+  // SPI on (MSTR = 0 so slave mode)
+  bitSet(SPCR, SPE);
 
   // SPI MODE 3
-  SPCR |= _BV(CPOL);
-  SPCR |= _BV(CPHA);
+  bitSet(SPCR, CPOL);
+  bitSet(SPCR, CPHA);
 
   // SPI LSB first
-  SPCR |= _BV(DORD);
+  bitSet(SPCR, DORD);
 
   // SPI interrupts on
-  SPCR |= _BV(SPIE);
+  bitSet(SPCR, SPIE);
 
   // clear interrupt register INT0
-  //EIFR |= (1 << INTF0);
+  //bitSet(EIFR, INTF0);
   // attach interrupt INT0
   attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR0, RISING);
 }
@@ -56,14 +56,14 @@ void ISR0()
 
 // clear SPI buffer
 // SPI off
-  SPCR &= ~(1 << SPE);
+  bitClear(SPCR, SPE);
 // SPI on   
-  SPCR |= _BV(SPE);
-  
+  bitSet(SPCR, SPE);
+
   IF_DIR_int_occurred = true;
 }
 
-// not needed, change in DORD SPI register
+// not needed, all you need is a change in the DORD SPI register
 /*
 byte reverseBits(byte x) {
   x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
@@ -80,21 +80,17 @@ void loop (void)
   if (IF_DIR_int_occurred && millis() > start_time + 5)
   {
     noInterrupts();
-    // turn off SPI interrupts
-    //SPCR &= ~(1 << SPIE);
 
     for (int i = 0; i < position; i++)
     {
       Serial.print (IF_DIR_level[i]);
       Serial.print (";");
-      Serial.println (read_byte[i], HEX);//(reverseBits(read_byte[i]), HEX);
+      Serial.println (read_byte[i], HEX);
     }
 
     position = 0;
     IF_DIR_int_occurred = false;
 
-    // turn on SPI interrupts
-    //SPCR |= _BV(SPIE);
     interrupts();
   }
 }
