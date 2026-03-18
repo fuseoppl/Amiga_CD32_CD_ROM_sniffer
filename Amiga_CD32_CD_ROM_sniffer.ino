@@ -1,4 +1,4 @@
-//CD32 Akiko-CDROM IF command sniffer v.1.0
+//CD32 Akiko-CDROM IF command sniffer v.1.1 (SPI buffer clearing not tested for proper operation)
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
@@ -22,7 +22,7 @@ void setup (void)
   // have to send on master in, *slave out*
   pinMode(MISO, OUTPUT);
   
-  // SPI slave mode on
+  // SPI slave mode on (MSTR = 0)
   SPCR |= _BV(SPE);
 
   // SPI MODE 3
@@ -53,9 +53,17 @@ ISR (SPI_STC_vect)
 void ISR0()
 {
   start_time = millis();
+
+// clear SPI buffer
+// SPI off
+  SPCR &= ~(1 << SPE);
+// SPI on   
+  SPCR |= _BV(SPE);
+  
   IF_DIR_int_occurred = true;
 }
 
+// not needed, change in DORD SPI register
 /*
 byte reverseBits(byte x) {
   x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
