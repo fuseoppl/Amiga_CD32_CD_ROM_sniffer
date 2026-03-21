@@ -5,6 +5,10 @@
 //Arduino GND    to Amiga CD32 GND
 
 #include "pins_arduino.h"
+#include <ST7032_asukiaaa.h>
+
+ST7032_asukiaaa lcd;
+int contrast = 15;
 
 #define IF_DIR 2
 volatile unsigned long start_time;
@@ -31,6 +35,17 @@ void setup (void)
 
   // SPI LSB first
   bitSet(SPCR, DORD);
+
+  
+  lcd.begin(16, 2); // columns and rows
+  lcd.setContrast(contrast);
+ 
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("DISK     m  s  '");
+  lcd.setCursor(0, 1);
+  lcd.print("TR.      m  s  '");
+
 
   // SPI interrupts on
   bitSet(SPCR, SPIE);
@@ -79,7 +94,7 @@ void loop (void)
   // so we print the collected data
   if (IF_DIR_int_occurred && millis() > start_time + 5)
   {
-    noInterrupts();
+    //noInterrupts();
 
     for (int i = 0; i < position; i++)
     {
@@ -88,9 +103,43 @@ void loop (void)
       Serial.println (read_byte[i], HEX);
     }
 
+    if ((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0])
+    {
+      String TN = String(read_byte[6], HEX);
+      if (TN.length() == 1) TN = " " + TN;
+      String TM = String(read_byte[8], HEX);
+      if (TM.length() == 1) TM = " " + TM;
+      String TS = String(read_byte[9], HEX);
+      if (TS.length() == 1) TS = " " + TS;
+      String TD = String(read_byte[10], HEX);
+      if (TD.length() == 1) TD = " " + TD;
+      String DM = String(read_byte[12], HEX);
+      if (DM.length() == 1) DM = " " + DM;
+      String DS = String(read_byte[13], HEX);
+      if (DS.length() == 1) DS = " " + DS;
+      String DD = String(read_byte[14], HEX);
+      if (DD.length() == 1) DD = " " + DD;
+
+      lcd.setCursor(7,0);
+      lcd.print(DM);
+      lcd.setCursor(10,0);
+      lcd.print(DS);
+      lcd.setCursor(13,0);
+      lcd.print(DD);
+
+      lcd.setCursor(4,1);
+      lcd.print(TN);
+      lcd.setCursor(7,1);
+      lcd.print(TM);
+      lcd.setCursor(10,1);
+      lcd.print(TS);
+      lcd.setCursor(13,1);
+      lcd.print(TD);
+    }
+
     position = 0;
     IF_DIR_int_occurred = false;
 
-    interrupts();
+    //interrupts();
   }
 }
