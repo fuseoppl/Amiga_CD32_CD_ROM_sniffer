@@ -1,14 +1,18 @@
-//CD32 Akiko-CDROM IF command sniffer v.2.0
+//CD32 Akiko-CDROM IF command sniffer v.2.1
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
 //Arduino GND    to Amiga CD32 GND
 
-#include "pins_arduino.h"
-#include <ST7032_asukiaaa.h>
+#define LCDENABLE
 
-ST7032_asukiaaa lcd;
-int contrast = 15;
+#include "pins_arduino.h"
+
+#if defined(LCDENABLE)
+  #include <ST7032_asukiaaa.h>
+  ST7032_asukiaaa lcd;
+  int contrast = 15;
+#endif
 
 #define IF_DIR 2
 volatile unsigned long start_time;
@@ -36,6 +40,7 @@ void setup (void)
   // SPI LSB first
   bitSet(SPCR, DORD);
 
+#if defined(LCDENABLE)
   lcd.begin(16, 2); // columns and rows
   lcd.setContrast(contrast);
   lcd.clear();
@@ -43,6 +48,7 @@ void setup (void)
   lcd.print("DISK  i  m  s  f");
   lcd.setCursor(0, 1);
   lcd.print("TR.      m  s  f");
+#endif
 
   // SPI interrupts on
   bitSet(SPCR, SPIE);
@@ -95,11 +101,15 @@ void loop (void)
 
     for (int i = 0; i < position; i++)
     {
-      Serial.print (i);
-      Serial.print (";");
-      Serial.print (IF_DIR_level[i]);
-      Serial.print (";");
-      Serial.println (read_byte[i], HEX);
+#if defined(LCDENABLE)
+      if (i < 244 && read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA1)
+      {
+        String TN = String(read_byte[i+10], HEX);
+        if (TN.length() == 1) TN = " " + TN;
+
+        lcd.setCursor(4,1);
+        lcd.print(TN);
+      }
 
       if (i < 244 && read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA2)
       {
@@ -122,8 +132,8 @@ void loop (void)
         lcd.setCursor(13,0);
         lcd.print(DF);
 
-        lcd.setCursor(4,1);
-        lcd.print("  ");
+        //lcd.setCursor(4,1);
+        //lcd.print("  ");
         lcd.setCursor(7,1);
         lcd.print("  ");
         lcd.setCursor(10,1);
@@ -131,9 +141,17 @@ void loop (void)
         lcd.setCursor(13,1);
         lcd.print("  ");
       }
+#else
+      Serial.print (i);
+      Serial.print (";");
+      Serial.print (IF_DIR_level[i]);
+      Serial.print (";");
+      Serial.println (read_byte[i], HEX);
+#endif
     }
 
-    if ((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0])
+#if defined(LCDENABLE)
+    if (position == 18 && ((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0]))
     {
       String TN = String(read_byte[6], HEX);
       if (TN.length() == 1) TN = " " + TN;
@@ -170,6 +188,7 @@ void loop (void)
       lcd.setCursor(13,1);
       lcd.print(TF);
     }
+#endif
 
     position = 0;
     IF_DIR_int_occurred = false;
