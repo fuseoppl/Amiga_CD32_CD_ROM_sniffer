@@ -1,4 +1,4 @@
-//CD32 Akiko-CDROM IF command sniffer v.1.2
+//CD32 Akiko-CDROM IF command sniffer v.2.0
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
@@ -36,16 +36,13 @@ void setup (void)
   // SPI LSB first
   bitSet(SPCR, DORD);
 
-  
   lcd.begin(16, 2); // columns and rows
   lcd.setContrast(contrast);
- 
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("DISK     m  s  '");
+  lcd.print("DISK  i  m  s  f");
   lcd.setCursor(0, 1);
-  lcd.print("TR.      m  s  '");
-
+  lcd.print("TR.      m  s  f");
 
   // SPI interrupts on
   bitSet(SPCR, SPIE);
@@ -98,9 +95,42 @@ void loop (void)
 
     for (int i = 0; i < position; i++)
     {
+      Serial.print (i);
+      Serial.print (";");
       Serial.print (IF_DIR_level[i]);
       Serial.print (";");
       Serial.println (read_byte[i], HEX);
+
+      if (i < 244 && read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA2)
+      {
+        String DX = String(read_byte[i+6], HEX);
+        if (DX.length() == 1) DX = " " + DX;
+        String DM = String(read_byte[i+10], HEX);
+        if (DM.length() == 1) DM = " " + DM;
+        String DS = String(read_byte[i+11], HEX);
+        if (DS.length() == 1) DS = " " + DS;
+        String DF = String(read_byte[i+12], HEX);
+        if (DF.length() == 1) DF = " " + DF;
+
+
+        lcd.setCursor(4,0);
+        lcd.print(DX);
+        lcd.setCursor(7,0);
+        lcd.print(DM);
+        lcd.setCursor(10,0);
+        lcd.print(DS);
+        lcd.setCursor(13,0);
+        lcd.print(DF);
+
+        lcd.setCursor(4,1);
+        lcd.print("  ");
+        lcd.setCursor(7,1);
+        lcd.print("  ");
+        lcd.setCursor(10,1);
+        lcd.print("  ");
+        lcd.setCursor(13,1);
+        lcd.print("  ");
+      }
     }
 
     if ((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0])
@@ -111,21 +141,25 @@ void loop (void)
       if (TM.length() == 1) TM = " " + TM;
       String TS = String(read_byte[9], HEX);
       if (TS.length() == 1) TS = " " + TS;
-      String TD = String(read_byte[10], HEX);
-      if (TD.length() == 1) TD = " " + TD;
+      String TF = String(read_byte[10], HEX);
+      if (TF.length() == 1) TF = " " + TF;
+      String DX = String(read_byte[7], HEX);
+      if (DX.length() == 1) DX = " " + DX;
       String DM = String(read_byte[12], HEX);
       if (DM.length() == 1) DM = " " + DM;
       String DS = String(read_byte[13], HEX);
       if (DS.length() == 1) DS = " " + DS;
-      String DD = String(read_byte[14], HEX);
-      if (DD.length() == 1) DD = " " + DD;
+      String DF = String(read_byte[14], HEX);
+      if (DF.length() == 1) DF = " " + DF;
 
+      lcd.setCursor(4,0);
+      lcd.print(DX);
       lcd.setCursor(7,0);
       lcd.print(DM);
       lcd.setCursor(10,0);
       lcd.print(DS);
       lcd.setCursor(13,0);
-      lcd.print(DD);
+      lcd.print(DF);
 
       lcd.setCursor(4,1);
       lcd.print(TN);
@@ -134,7 +168,7 @@ void loop (void)
       lcd.setCursor(10,1);
       lcd.print(TS);
       lcd.setCursor(13,1);
-      lcd.print(TD);
+      lcd.print(TF);
     }
 
     position = 0;
