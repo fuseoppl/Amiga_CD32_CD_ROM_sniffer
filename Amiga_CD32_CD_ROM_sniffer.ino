@@ -91,6 +91,16 @@ byte reverseBits(byte x) {
 }
 */
 
+uint8_t TwoComplementChecksum8(const byte *data, size_t dataLength, size_t startData)
+{
+  uint8_t value = 0;
+  for (size_t i = startData; i < dataLength; i++)
+  {
+    value += (uint8_t)data[i];
+  }
+  return ~value;
+}
+
 void loop (void)
 {
   // 5 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen,
@@ -151,7 +161,7 @@ void loop (void)
     }
 
 #if defined(LCDENABLE)
-    if (position == 18 && ((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0]))
+    if (position == 18 && read_byte[2] == read_byte[0] && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])//((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0]))
     {
       String TN = String(read_byte[6], HEX);
       if (TN.length() == 1) TN = " " + TN;
