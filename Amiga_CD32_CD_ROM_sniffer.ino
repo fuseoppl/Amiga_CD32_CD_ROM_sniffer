@@ -1,4 +1,4 @@
-//CD32 Akiko-CDROM IF command sniffer v.2.1
+//CD32 Akiko-CDROM IF command sniffer v.3.0
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
@@ -20,6 +20,7 @@ volatile uint8_t read_byte[255];
 volatile bool IF_DIR_level[255];
 volatile bool IF_DIR_int_occurred;
 volatile uint8_t position;
+volatile bool brandAndModelPrinted;
 
 void setup (void)
 {
@@ -45,9 +46,7 @@ void setup (void)
   lcd.setContrast(contrast);
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("DISK  i  m  s  f");
-  lcd.setCursor(0, 1);
-  lcd.print("TR.      m  s  f");
+  lcd.print("init...");
 #endif
 
   // SPI interrupts on
@@ -112,7 +111,54 @@ void loop (void)
     for (int i = 0; i < position; i++)
     {
 #if defined(LCDENABLE)
-      if (i < 244 && read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA1)
+      if (i < 244 && read_byte[i] == 0x27 && read_byte[i+1] == 0xD8 && read_byte[i+2] == 0x27 && read_byte[i+3] == 0x1)
+      {
+        String brandName = "";
+        String modelName = "";
+
+        for (int ib = i+4; ib < i+12; ib++)
+        {
+          brandName += (char)read_byte[ib];
+        }
+
+        for (int im = i+12; im < i+22; im++)
+        {
+          modelName += (char)read_byte[im];
+        }
+
+        String DX = String(read_byte[i+6], HEX);
+        if (DX.length() == 1) DX = " " + DX;
+
+        lcd.setCursor(0,0);
+        lcd.print(brandName);
+        lcd.print("        ");
+        lcd.setCursor(0,1);
+        lcd.print(modelName);
+        lcd.print("       ");
+
+        brandAndModelPrinted = true;
+      }
+
+      if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA0 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
+      {
+        if (brandAndModelPrinted)
+        {
+          lcd.setCursor(0, 0);
+          lcd.print("DISK  i  m  s  f");
+          lcd.setCursor(0, 1);
+          lcd.print("TR.      m  s  f");
+
+          brandAndModelPrinted = false;
+        }
+
+        String DX = String(read_byte[i+6], HEX);
+        if (DX.length() == 1) DX = " " + DX;
+
+        lcd.setCursor(4,0);
+        lcd.print(DX);
+      }
+
+      if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA1 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
       {
         String TN = String(read_byte[i+10], HEX);
         if (TN.length() == 1) TN = " " + TN;
@@ -121,10 +167,8 @@ void loop (void)
         lcd.print(TN);
       }
 
-      if (i < 244 && read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA2)
+      if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA2 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
       {
-        String DX = String(read_byte[i+6], HEX);
-        if (DX.length() == 1) DX = " " + DX;
         String DM = String(read_byte[i+10], HEX);
         if (DM.length() == 1) DM = " " + DM;
         String DS = String(read_byte[i+11], HEX);
@@ -132,9 +176,6 @@ void loop (void)
         String DF = String(read_byte[i+12], HEX);
         if (DF.length() == 1) DF = " " + DF;
 
-
-        lcd.setCursor(4,0);
-        lcd.print(DX);
         lcd.setCursor(7,0);
         lcd.print(DM);
         lcd.setCursor(10,0);
@@ -142,8 +183,6 @@ void loop (void)
         lcd.setCursor(13,0);
         lcd.print(DF);
 
-        //lcd.setCursor(4,1);
-        //lcd.print("  ");
         lcd.setCursor(7,1);
         lcd.print("  ");
         lcd.setCursor(10,1);
@@ -161,7 +200,7 @@ void loop (void)
     }
 
 #if defined(LCDENABLE)
-    if (position == 18 && read_byte[2] == read_byte[0] && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])//((read_byte[0] & 15) == 6 && (read_byte[1] & 15) == 9 && read_byte[2] == read_byte[0]))
+    if ((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && read_byte[3] == 0x2 && read_byte[4] == 0x0 && read_byte[11] == 0x0 && read_byte[15] == 0x0 && read_byte[16] == 0x0 && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])
     {
       String TN = String(read_byte[6], HEX);
       if (TN.length() == 1) TN = " " + TN;
@@ -202,7 +241,7 @@ void loop (void)
 
     position = 0;
     IF_DIR_int_occurred = false;
-
+    memset(read_byte, 0, sizeof read_byte);
     //interrupts();
   }
 }
