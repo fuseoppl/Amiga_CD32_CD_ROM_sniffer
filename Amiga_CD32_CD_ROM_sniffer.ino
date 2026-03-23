@@ -1,9 +1,11 @@
-//CD32 Akiko-CDROM IF command sniffer v.3.0
+//CD32 Akiko-CDROM IF command sniffer v.3.1
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
 //Arduino GND    to Amiga CD32 GND
+//The display must be with I2C communication!
 
+//Display on, sniffer off
 #define LCDENABLE
 
 #include "pins_arduino.h"
@@ -11,7 +13,7 @@
 #if defined(LCDENABLE)
   #include <ST7032_asukiaaa.h>
   ST7032_asukiaaa lcd;
-  int contrast = 15;
+  int contrast = 10;
 #endif
 
 #define IF_DIR 2
@@ -45,8 +47,6 @@ void setup (void)
   lcd.begin(16, 2); // columns and rows
   lcd.setContrast(contrast);
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("init...");
 #endif
 
   // SPI interrupts on
