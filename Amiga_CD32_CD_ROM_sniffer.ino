@@ -1,11 +1,11 @@
-//CD32 Akiko-CDROM IF command sniffer and track dispal
+//CD32 Akiko-CDROM IF command sniffer and track display
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
 //Arduino GND    to Amiga CD32 GND
 //The display must be with I2C communication!
 
-const char* firmwareRevision    = "3.2";
+const char* firmwareRevision = "3.3";
 
 //Display on, sniffer off
 #define LCDENABLE
@@ -24,7 +24,8 @@ volatile uint8_t read_byte[255];
 volatile bool IF_DIR_level[255];
 volatile bool IF_DIR_int_occurred;
 volatile uint8_t position;
-volatile bool brandAndModelPrinted;
+volatile bool backgroundPrinted;
+volatile bool frameRecived;
 
 void setup (void)
 {
@@ -139,20 +140,23 @@ void loop (void)
         lcd.print(modelName);
         lcd.print("       ");
 
-        brandAndModelPrinted = true;
+        frameRecived = false;
+        backgroundPrinted = false;
+      }
+
+      if (!backgroundPrinted && frameRecived)
+      {
+        lcd.setCursor(0, 0);
+        lcd.print("DISK  i  m  s  f");
+        lcd.setCursor(0, 1);
+        lcd.print("TR.      m  s  f");
+
+        backgroundPrinted = true;
       }
 
       if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA0 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
       {
-        if (brandAndModelPrinted)
-        {
-          lcd.setCursor(0, 0);
-          lcd.print("DISK  i  m  s  f");
-          lcd.setCursor(0, 1);
-          lcd.print("TR.      m  s  f");
-
-          brandAndModelPrinted = false;
-        }
+        frameRecived = true;
 
         String DX = String(read_byte[i+6], HEX);
         if (DX.length() == 1) DX = " " + DX;
@@ -163,6 +167,8 @@ void loop (void)
 
       if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA1 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
       {
+        frameRecived = true;
+
         String TN = String(read_byte[i+10], HEX);
         if (TN.length() == 1) TN = " " + TN;
 
@@ -172,6 +178,8 @@ void loop (void)
 
       if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA2 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
       {
+        frameRecived = true;
+
         String DM = String(read_byte[i+10], HEX);
         if (DM.length() == 1) DM = " " + DM;
         String DS = String(read_byte[i+11], HEX);
@@ -205,6 +213,8 @@ void loop (void)
 #if defined(LCDENABLE)
     if ((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && read_byte[3] == 0x2 && read_byte[4] == 0x0 && read_byte[11] == 0x0 && read_byte[15] == 0x0 && read_byte[16] == 0x0 && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])
     {
+      frameRecived = true;
+
       String TN = String(read_byte[6], HEX);
       if (TN.length() == 1) TN = " " + TN;
       String TM = String(read_byte[8], HEX);
