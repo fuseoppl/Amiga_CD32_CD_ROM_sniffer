@@ -1,9 +1,11 @@
-//CD32 Akiko-CDROM IF command sniffer v.3.1
+//CD32 Akiko-CDROM IF command sniffer and track dispal
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  2 to Amiga CD32 IF_DIR
 //Arduino GND    to Amiga CD32 GND
 //The display must be with I2C communication!
+
+const char* firmwareRevision    = "3.2";
 
 //Display on, sniffer off
 #define LCDENABLE
@@ -46,7 +48,7 @@ void setup (void)
 #if defined(LCDENABLE)
   lcd.begin(16, 2); // columns and rows
   lcd.setContrast(contrast);
-  lcd.clear();
+//  lcd.clear();
 #endif
 
   // SPI interrupts on
@@ -131,7 +133,8 @@ void loop (void)
 
         lcd.setCursor(0,0);
         lcd.print(brandName);
-        lcd.print("        ");
+        lcd.print("     ");
+        lcd.print(firmwareRevision);
         lcd.setCursor(0,1);
         lcd.print(modelName);
         lcd.print("       ");
