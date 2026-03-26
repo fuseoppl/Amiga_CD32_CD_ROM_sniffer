@@ -5,7 +5,7 @@
 //Arduino GND    to Amiga CD32 GND
 //The display must be with I2C communication!
 
-const char* firmwareRevision = "3.3";
+const char* firmwareRevision = "3.4";
 
 //Display on, sniffer off
 #define LCDENABLE
@@ -107,108 +107,11 @@ void loop (void)
 {
   // 5 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen,
   // so we print the collected data
-  if (IF_DIR_int_occurred && millis() > start_time + 5)
+  if (IF_DIR_int_occurred && millis() > start_time + 1)
   {
+    detachInterrupt(digitalPinToInterrupt(IF_DIR));
+    bitClear(SPCR, SPIE);
     //noInterrupts();
-
-    for (int i = 0; i < position; i++)
-    {
-#if defined(LCDENABLE)
-      if (i < 244 && read_byte[i] == 0x27 && read_byte[i+1] == 0xD8 && read_byte[i+2] == 0x27 && read_byte[i+3] == 0x1)
-      {
-        String brandName = "";
-        String modelName = "";
-
-        for (int ib = i+4; ib < i+12; ib++)
-        {
-          brandName += (char)read_byte[ib];
-        }
-
-        for (int im = i+12; im < i+22; im++)
-        {
-          modelName += (char)read_byte[im];
-        }
-
-        String DX = String(read_byte[i+6], HEX);
-        if (DX.length() == 1) DX = " " + DX;
-
-        lcd.setCursor(0,0);
-        lcd.print(brandName);
-        lcd.print("     ");
-        lcd.print(firmwareRevision);
-        lcd.setCursor(0,1);
-        lcd.print(modelName);
-        lcd.print("       ");
-
-        frameRecived = false;
-        backgroundPrinted = false;
-      }
-
-      if (!backgroundPrinted && frameRecived)
-      {
-        lcd.setCursor(0, 0);
-        lcd.print("DISK  i  m  s  f");
-        lcd.setCursor(0, 1);
-        lcd.print("TR.      m  s  f");
-
-        backgroundPrinted = true;
-      }
-
-      if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA0 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
-      {
-        frameRecived = true;
-
-        String DX = String(read_byte[i+6], HEX);
-        if (DX.length() == 1) DX = " " + DX;
-
-        lcd.setCursor(4,0);
-        lcd.print(DX);
-      }
-
-      if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA1 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
-      {
-        frameRecived = true;
-
-        String TN = String(read_byte[i+10], HEX);
-        if (TN.length() == 1) TN = " " + TN;
-
-        lcd.setCursor(4,1);
-        lcd.print(TN);
-      }
-
-      if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] == 0xA2 && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
-      {
-        frameRecived = true;
-
-        String DM = String(read_byte[i+10], HEX);
-        if (DM.length() == 1) DM = " " + DM;
-        String DS = String(read_byte[i+11], HEX);
-        if (DS.length() == 1) DS = " " + DS;
-        String DF = String(read_byte[i+12], HEX);
-        if (DF.length() == 1) DF = " " + DF;
-
-        lcd.setCursor(7,0);
-        lcd.print(DM);
-        lcd.setCursor(10,0);
-        lcd.print(DS);
-        lcd.setCursor(13,0);
-        lcd.print(DF);
-
-        lcd.setCursor(7,1);
-        lcd.print("  ");
-        lcd.setCursor(10,1);
-        lcd.print("  ");
-        lcd.setCursor(13,1);
-        lcd.print("  ");
-      }
-#else
-      Serial.print (i);
-      Serial.print (";");
-      Serial.print (IF_DIR_level[i]);
-      Serial.print (";");
-      Serial.println (read_byte[i], HEX);
-#endif
-    }
 
 #if defined(LCDENABLE)
     if ((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && read_byte[3] == 0x2 && read_byte[4] == 0x0 && read_byte[11] == 0x0 && read_byte[15] == 0x0 && read_byte[16] == 0x0 && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])
@@ -250,11 +153,110 @@ void loop (void)
       lcd.setCursor(13,1);
       lcd.print(TF);
     }
+    else
+    {
+#endif
+      for (int i = 0; i < position; i++)
+      {
+#if defined(LCDENABLE)
+        if (read_byte[i] == 0x27 && read_byte[i+1] == 0xD8 && read_byte[i+2] == 0x27 && read_byte[i+3] == 0x1)
+        {
+          String brandName = "";
+          String modelName = "";
+
+          for (int ib = i+4; ib < i+12; ib++)
+          {
+            brandName += (char)read_byte[ib];
+          }
+
+          for (int im = i+12; im < i+22; im++)
+          {
+            modelName += (char)read_byte[im];
+          }
+
+          lcd.setCursor(0,0);
+          lcd.print(brandName);
+          lcd.print("     ");
+          lcd.print(firmwareRevision);
+          lcd.setCursor(0,1);
+          lcd.print(modelName);
+          lcd.print("       ");
+
+          frameRecived = false;
+          backgroundPrinted = false;
+        }
+        else if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] > 0x9F && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
+        {
+          frameRecived = true;
+
+          if (read_byte[i+5] == 0xA0)
+          {
+            String DX = String(read_byte[i+6], HEX);
+            if (DX.length() == 1) DX = " " + DX;
+
+            lcd.setCursor(4,0);
+            lcd.print(DX);
+          }
+          else if (read_byte[i+5] == 0xA1)
+          {
+            String TN = String(read_byte[i+10], HEX);
+            if (TN.length() == 1) TN = " " + TN;
+
+            lcd.setCursor(4,1);
+            lcd.print(TN);
+          }
+          else if (read_byte[i+5] == 0xA2)
+          {
+            String DM = String(read_byte[i+10], HEX);
+            if (DM.length() == 1) DM = " " + DM;
+            String DS = String(read_byte[i+11], HEX);
+            if (DS.length() == 1) DS = " " + DS;
+            String DF = String(read_byte[i+12], HEX);
+            if (DF.length() == 1) DF = " " + DF;
+
+            lcd.setCursor(7,0);
+            lcd.print(DM);
+            lcd.setCursor(10,0);
+            lcd.print(DS);
+            lcd.setCursor(13,0);
+            lcd.print(DF);
+
+            lcd.setCursor(7,1);
+            lcd.print("  ");
+            lcd.setCursor(10,1);
+            lcd.print("  ");
+            lcd.setCursor(13,1);
+            lcd.print("  ");
+          }        
+        }
+#else
+        Serial.print (i);
+        Serial.print (";");
+        Serial.print (IF_DIR_level[i]);
+        Serial.print (";");
+        Serial.println (read_byte[i], HEX);
+#endif
+      }
+#if defined(LCDENABLE)
+    }
+
+    if (!backgroundPrinted && frameRecived)
+    {
+      lcd.setCursor(0, 0);
+      lcd.print("DISK  i  m  s  f");
+      lcd.setCursor(0, 1);
+      lcd.print("TR.      m  s  f");
+
+      backgroundPrinted = true;
+    }
 #endif
 
     position = 0;
     IF_DIR_int_occurred = false;
     memset(read_byte, 0, sizeof read_byte);
+
+    attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR0, RISING);
+    bitSet(SPCR, SPIE);
     //interrupts();
   }
 }
