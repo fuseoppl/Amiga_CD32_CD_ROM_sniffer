@@ -105,7 +105,7 @@ uint8_t TwoComplementChecksum8(const byte *data, size_t dataLength, size_t start
 
 void loop (void)
 {
-  // 5 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen,
+  // 1 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen,
   // so we print the collected data
   if (IF_DIR_int_occurred && millis() > start_time + 1)
   {
@@ -243,9 +243,9 @@ void loop (void)
     if (!backgroundPrinted && frameRecived)
     {
       lcd.setCursor(0, 0);
-      lcd.print("DISK  i  m  s  f");
+      lcd.print("DISK  i  m  s  f"); //index, minutes, seconds, frames
       lcd.setCursor(0, 1);
-      lcd.print("TR.      m  s  f");
+      lcd.print("TR.      m  s  f"); //track, minutes, seconds, frames
 
       backgroundPrinted = true;
     }
