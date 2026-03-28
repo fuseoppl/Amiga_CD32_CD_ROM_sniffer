@@ -5,6 +5,18 @@
 //Arduino GND    to Amiga CD32 GND
 //The display must be with I2C communication!
 
+//I was wondering why the CD drive has three microcontroller pins connected to handle the IF_DATA signal, and now it's all clear to me.
+//The CD drive operates in MASTER mode.
+//When the CD drive wants to send data to Akiko, it sets the IF_DIR signal to a logical 0.
+//After about 15 µs, it transmits the data. This means it starts the clock on the IF_CLK signal, and on the rising edge of the clock signal, the IF_DATA signal is set accordingly.
+//Nothing special, IF_DIR acts a bit like a chip select signal.
+//The problem arises when Akiko needs to send data; it can't control the clock signal or the IF_DIR signal, as these are inputs to the Akiko.
+//In this situation, it sets the IF_DATA pin to a logical 0. However, this doesn't provide any information for the SPI interface for the master device, such as the CD drive.
+//So the third pin in the CD drive's microcontroller is simply an interrupt input, activated when there's no data transmission.
+//After detecting a signal change on this pin, the CD drive's microcontroller enables the SPI interface and begins transmitting the clock signal.
+//It all makes sense now, although in my opinion it was a poor solution, but that doesn't matter now, what matters is that in the microcontroller that will support the new CD drive,
+//the MISO, MOSI and INT pins need to be connected together. 
+
 const char* firmwareRevision = "3.4";
 
 //Display on, sniffer off
@@ -65,7 +77,9 @@ void setup (void)
 ISR (SPI_STC_vect)
 {
   IF_DIR_level[position] = digitalRead(IF_DIR);
+  
   read_byte[position] = SPDR;
+
   position++;
 }
 
