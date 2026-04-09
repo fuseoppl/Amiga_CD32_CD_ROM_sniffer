@@ -17,7 +17,7 @@
 //It all makes sense now, although in my opinion it was a poor solution, but that doesn't matter now, what matters is that in the microcontroller that will support the new CD drive,
 //the MISO, MOSI and INT pins need to be connected together. 
 
-const char* firmwareRevision = "3.4";
+const char* firmwareRevision = "3.5";
 
 //Display on, sniffer off
 #define LCDENABLE
@@ -25,12 +25,14 @@ const char* firmwareRevision = "3.4";
 #include "pins_arduino.h"
 
 #if defined(LCDENABLE)
-  #include <ST7032_asukiaaa.h>
-  ST7032_asukiaaa lcd;
-  int contrast = 10;
+//https://www.tztstore.com/goods/show-6267.html
+//TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
+#include "OLedI2C.h"
+OLedI2C lcd;
+int contrast = 0xFF;
 #endif
 
-#define IF_DIR 2
+#define IF_DIR 3
 volatile unsigned long start_time;
 volatile uint8_t read_byte[255];
 volatile bool IF_DIR_level[255];
@@ -59,9 +61,8 @@ void setup (void)
   bitSet(SPCR, DORD);
 
 #if defined(LCDENABLE)
-  lcd.begin(16, 2); // columns and rows
-  lcd.setContrast(contrast);
-//  lcd.clear();
+  lcd.init();
+  lcd.print("   Amiga CD32   ");
 #endif
 
   // SPI interrupts on
@@ -150,22 +151,22 @@ void loop (void)
       if (DF.length() == 1) DF = " " + DF;
 
       lcd.setCursor(4,0);
-      lcd.print(DX);
+      lcd.print(DX.c_str());
       lcd.setCursor(7,0);
-      lcd.print(DM);
+      lcd.print(DM.c_str());
       lcd.setCursor(10,0);
-      lcd.print(DS);
+      lcd.print(DS.c_str());
       lcd.setCursor(13,0);
-      lcd.print(DF);
+      lcd.print(DF.c_str());
 
       lcd.setCursor(4,1);
-      lcd.print(TN);
+      lcd.print(TN.c_str());
       lcd.setCursor(7,1);
-      lcd.print(TM);
+      lcd.print(TM.c_str());
       lcd.setCursor(10,1);
-      lcd.print(TS);
+      lcd.print(TS.c_str());
       lcd.setCursor(13,1);
-      lcd.print(TF);
+      lcd.print(TF.c_str());
     }
     else
     {
@@ -189,11 +190,11 @@ void loop (void)
           }
 
           lcd.setCursor(0,0);
-          lcd.print(brandName);
+          lcd.print(brandName.c_str());
           lcd.print("     ");
           lcd.print(firmwareRevision);
           lcd.setCursor(0,1);
-          lcd.print(modelName);
+          lcd.print(modelName.c_str());
           lcd.print("       ");
 
           frameRecived = false;
@@ -209,7 +210,7 @@ void loop (void)
             if (DX.length() == 1) DX = " " + DX;
 
             lcd.setCursor(4,0);
-            lcd.print(DX);
+            lcd.print(DX.c_str());
           }
           else if (read_byte[i+5] == 0xA1)
           {
@@ -217,7 +218,7 @@ void loop (void)
             if (TN.length() == 1) TN = " " + TN;
 
             lcd.setCursor(4,1);
-            lcd.print(TN);
+            lcd.print(TN.c_str());
           }
           else if (read_byte[i+5] == 0xA2)
           {
@@ -229,11 +230,11 @@ void loop (void)
             if (DF.length() == 1) DF = " " + DF;
 
             lcd.setCursor(7,0);
-            lcd.print(DM);
+            lcd.print(DM.c_str());
             lcd.setCursor(10,0);
-            lcd.print(DS);
+            lcd.print(DS.c_str());
             lcd.setCursor(13,0);
-            lcd.print(DF);
+            lcd.print(DF.c_str());
 
             lcd.setCursor(7,1);
             lcd.print("  ");
