@@ -1,9 +1,12 @@
 //CD32 Akiko-CDROM IF command sniffer and track display
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
-//Arduino pin  2 to Amiga CD32 IF_DIR
+//Arduino pin  3 to Amiga CD32 IF_DIR
 //Arduino GND    to Amiga CD32 GND
+//Arduino pin  4 to Amiga CD32 RST via schottky diode, anode to CD32 RST
 //The display must be with I2C communication!
+//https://www.tztstore.com/goods/show-6267.html
+//TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
 
 //I was wondering why the CD drive has three microcontroller pins connected to handle the IF_DATA signal, and now it's all clear to me.
 //The CD drive operates in MASTER mode.
@@ -17,7 +20,7 @@
 //It all makes sense now, although in my opinion it was a poor solution, but that doesn't matter now, what matters is that in the microcontroller that will support the new CD drive,
 //the MISO, MOSI and INT pins need to be connected together. 
 
-const char* firmwareRevision = "3.5";
+const char* firmwareRevision = "3.6";
 
 //Display on, sniffer off
 #define LCDENABLE
@@ -25,14 +28,13 @@ const char* firmwareRevision = "3.5";
 #include "pins_arduino.h"
 
 #if defined(LCDENABLE)
-//https://www.tztstore.com/goods/show-6267.html
-//TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
 #include "OLedI2C.h"
 OLedI2C lcd;
 int contrast = 0xFF;
 #endif
 
-#define IF_DIR 3
+#define IF_DIR    3
+//#define READY_OUT 4
 volatile unsigned long start_time;
 volatile uint8_t read_byte[255];
 volatile bool IF_DIR_level[255];
@@ -43,12 +45,17 @@ volatile bool frameRecived;
 
 void setup (void)
 {
+  //pinMode(READY_OUT, OUTPUT);
+  //digitalWrite(READY_OUT, LOW);
+
   pinMode(IF_DIR, INPUT);
 
   Serial.begin (2000000);
 
   // have to send on master in, *slave out*
   pinMode(MISO, OUTPUT);
+  pinMode(MOSI, INPUT);
+  pinMode(SCK, INPUT);
   
   // SPI on (MSTR = 0 so slave mode)
   bitSet(SPCR, SPE);
@@ -62,8 +69,10 @@ void setup (void)
 
 #if defined(LCDENABLE)
   lcd.init();
-  lcd.print("   Amiga CD32   ");
+  lcd.print("CD32");
 #endif
+
+  //digitalWrite(READY_OUT, HIGH);
 
   // SPI interrupts on
   bitSet(SPCR, SPIE);
@@ -71,7 +80,7 @@ void setup (void)
   // clear interrupt register INT0
   //bitSet(EIFR, INTF0);
   // attach interrupt INT0
-  attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR0, RISING);
+  attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR1, RISING);
 }
 
 // here SPI Buffer, I have something
@@ -84,8 +93,8 @@ ISR (SPI_STC_vect)
   position++;
 }
 
-// here interrupt INT0, a change in the monitored signal occurred
-void ISR0()
+// here interrupt INT1, a change in the monitored signal occurred
+void ISR1()
 {
   start_time = millis();
 
@@ -129,8 +138,11 @@ void loop (void)
     //noInterrupts();
 
 #if defined(LCDENABLE)
-    if ((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && read_byte[3] == 0x2 && read_byte[4] == 0x0 && read_byte[11] == 0x0 && read_byte[15] == 0x0 && read_byte[16] == 0x0 && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])
+    //Play packet
+    if ((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && read_byte[4] == 0x0 && read_byte[11] == 0x0 && read_byte[15] == 0x0 && read_byte[16] == 0x0 && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])
     {
+      uint8_t playMode = read_byte[3]; //0x2 = Play, 0x3 = Pause
+
       frameRecived = true;
 
       String TN = String(read_byte[6], HEX);
@@ -200,7 +212,7 @@ void loop (void)
           frameRecived = false;
           backgroundPrinted = false;
         }
-        else if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] > 0x9F && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
+        else if (read_byte[i] == 0x6 && read_byte[i+1] == 0xA && read_byte[i+2] == 0x0 && read_byte[i+3] == 0x1 && read_byte[i+4] == 0x0 && read_byte[i+5] > 0x9F && TwoComplementChecksum8(read_byte, i+14, i) == read_byte[i+15])
         {
           frameRecived = true;
 
@@ -270,7 +282,7 @@ void loop (void)
     IF_DIR_int_occurred = false;
     memset(read_byte, 0, sizeof read_byte);
 
-    attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR0, RISING);
+    attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR1, RISING);
     bitSet(SPCR, SPIE);
     //interrupts();
   }

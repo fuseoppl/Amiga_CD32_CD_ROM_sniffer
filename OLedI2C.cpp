@@ -139,7 +139,7 @@ void OLedI2C::print(const char *String)
   unsigned char i=0;
   while(String[i])
   {
-    sendData(String[i]);  // *** Show String to OLED
+    sendData(String[i]);  // *** Send String to OLED
     i++;
   }
 }
