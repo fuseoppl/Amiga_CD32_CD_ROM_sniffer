@@ -50,8 +50,6 @@ void setup (void)
 
   pinMode(IF_DIR, INPUT);
 
-  Serial.begin (2000000);
-
   // have to send on master in, *slave out*
   pinMode(MISO, OUTPUT);
   pinMode(MOSI, INPUT);
@@ -69,7 +67,9 @@ void setup (void)
 
 #if defined(LCDENABLE)
   lcd.init();
-  lcd.print("CD32");
+//  lcd.print("CD32");
+#else
+  Serial.begin (2000000);
 #endif
 
   //digitalWrite(READY_OUT, HIGH);

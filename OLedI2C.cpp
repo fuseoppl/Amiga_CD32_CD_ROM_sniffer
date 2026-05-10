@@ -22,7 +22,7 @@ OLedI2C::~OLedI2C(){}
 void OLedI2C::init()
 {
   // *** I2C initial *** //
-  delay(100);
+  //delay(100);
   sendCommand(0x2A);	  // **** Set "RE"=1	00101010B
   sendCommand(0x71);
   sendCommand(0x5C);
@@ -71,7 +71,7 @@ void OLedI2C::init()
   sendCommand(0x01); 
   sendCommand(0x80); 	  // **** Set DDRAM Address to 0x80 (line 1 start)
 
-  delay(100);
+  delay(1); //100
   sendCommand(0x0C);  	// **** Turn on Display
 }
  
