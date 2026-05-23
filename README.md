@@ -14,4 +14,4 @@
 To work in display mode, leave this enabled:
 #define LCDENABLE
 
-![schema](https://github.com/fuseoppl/Amiga_CD32_CD_ROM_sniffer/blob/938fb55ecff812e342e18234801e03014686bb03/Audio_disk_info_display.png)
+![schema](https://github.com/fuseoppl/Amiga_CD32_CD_ROM_sniffer/blob/938fb55ecff812e342e18234801e03014686bb03/Audio_disk_info_display_002.png)
