@@ -21,7 +21,6 @@ public:
 		void sendCommand(unsigned char command); // unsigned char
 		void print(const char *String); // *String
 		void sendString(const char *String, uint8_t col, uint8_t row); // *String, column, row
-		void sendFloat(float digit, uint8_t dec, uint8_t nad, uint8_t col, uint8_t row); // float, digits, decimal, column, row
 		void sendData(unsigned char data);
 		void clearLcd();
 		void setCursor(uint8_t, uint8_t); // column, row
@@ -29,5 +28,6 @@ public:
 		void lcdOff();
 		void lcdOn();
 		void setContrast(unsigned char contrast); // contrast should be the hex value between 0x00 and 0xFF
+		void createChar(uint8_t, uint8_t[]);
 };
 #endif

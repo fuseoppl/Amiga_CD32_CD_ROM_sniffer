@@ -52,8 +52,8 @@ void OLedI2C::init()
   sendCommand(0xDA); 	  // **** Set Seg Pins HW Config
   sendCommand(0x10);   
 
-  sendCommand(0x81);  	// **** Set Contrast
-  sendCommand(0xFF); 
+  sendCommand(0x81);  	// **** Set Contrast command
+  sendCommand(0xFF);
 
   sendCommand(0xDB);  	// **** Set VCOM deselect level
   sendCommand(0x30);  	// **** VCC x 0.83
@@ -75,7 +75,7 @@ void OLedI2C::init()
   sendCommand(0x0C);  	// **** Turn on Display
 }
  
-void OLedI2C::setCursor(uint8_t col, uint8_t row)
+void OLedI2C::setCursor(uint8_t col, uint8_t row) //column, row
 {
   int row_offsets[] = { 0x00, 0x40 };
   sendCommand(0x80 | (col + row_offsets[row]));
@@ -102,13 +102,7 @@ void OLedI2C::sendCommand(unsigned char command)
   Wire.write(OLED_Command_Mode);     		 // **** Set OLED Command mode
   Wire.write(command);
   Wire.endTransmission();                // **** End I2C 
-  delay(10);
-}
-void OLedI2C::sendFloat(float digit, uint8_t dec, uint8_t nad, uint8_t col, uint8_t row)
-{
-  char line[10];//Ten characters, I hope that's enough
-  dtostrf(digit,dec,nad,line);//Convert the float value to a string
-  sendString(line, col, row);
+  delay(1);
 }
 
  void OLedI2C::setContrast(unsigned char contrast) // contrast as 0x00 to 0xFF
@@ -151,13 +145,14 @@ void OLedI2C::sendData(unsigned char data)
   Wire.write(data);
   Wire.endTransmission();                 // **** End I2C 
 }
+
 void OLedI2C::scrollString(char* message, byte row, unsigned int time)//written by Nathan Chantrell http://nathan.chantrell.net/
 { 
   char buffer[16];
-  for (byte i=0;i<strlen(message)+16;i++)
+  for (byte i=0; i<strlen(message)+16; i++)
   {
     byte pos = i+1;
-    for (byte j=0;j<16;j++)
+    for (byte j=0; j<16; j++)
     {
       if ((pos<16)||(pos>strlen(message)+15))
       { // pad and trail with blank spaces
@@ -170,3 +165,18 @@ void OLedI2C::scrollString(char* message, byte row, unsigned int time)//written 
     delay(time);
   }
 }
+
+// Allows us to fill the first 8 CGRAM locations
+// with custom characters
+void OLedI2C::createChar(uint8_t location, uint8_t charmap[]) {
+  location &= 0x7; // we only have 8 locations 0-7
+
+  Wire.beginTransmission(OLED_Address);
+  Wire.write(OLED_Data_Mode | (location << 3));
+  for (int i=0; i<8; i++)
+  {
+    Wire.write(charmap[i]);
+  }
+  Wire.endTransmission();
+}
+
