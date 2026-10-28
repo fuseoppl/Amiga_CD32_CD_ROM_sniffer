@@ -21,8 +21,9 @@ OLedI2C::~OLedI2C(){}
 
 void OLedI2C::init()
 {
+  Wire.begin();
+  Wire.setClock(400000);
   // *** I2C initial *** //
-  //delay(100);
   sendCommand(0x2A);	  // **** Set "RE"=1	00101010B
   sendCommand(0x71);
   sendCommand(0x5C);
@@ -48,6 +49,7 @@ void OLedI2C::init()
   sendCommand(0x72);  	// **** Set ROM
   sendCommand(0x00);  	// **** Set ROM A and 8 CGRAM
 
+  sendCommand(0x2A);    // **** Additional RE bit security for command reliability
 
   sendCommand(0xDA); 	  // **** Set Seg Pins HW Config
   sendCommand(0x10);   
@@ -71,7 +73,7 @@ void OLedI2C::init()
   sendCommand(0x01); 
   sendCommand(0x80); 	  // **** Set DDRAM Address to 0x80 (line 1 start)
 
-  delay(1); //100
+  delay(2);
   sendCommand(0x0C);  	// **** Turn on Display
 }
  
@@ -84,6 +86,8 @@ void OLedI2C::setCursor(uint8_t col, uint8_t row) //column, row
 void OLedI2C::clearLcd()
 {
   sendCommand(0x01);
+  
+  delay(2); // Komenda czyszczenia DDRAM wymaga chwili przerwy na kontrolerze
 }
 
 void OLedI2C::lcdOff()
@@ -102,7 +106,7 @@ void OLedI2C::sendCommand(unsigned char command)
   Wire.write(OLED_Command_Mode);     		 // **** Set OLED Command mode
   Wire.write(command);
   Wire.endTransmission();                // **** End I2C 
-  delay(1);
+  //delay(1);
 }
 
  void OLedI2C::setContrast(unsigned char contrast) // contrast as 0x00 to 0xFF
@@ -117,6 +121,7 @@ void OLedI2C::sendCommand(unsigned char command)
   sendCommand(0x28);
 }
 
+/*
 void OLedI2C::sendString(const char *String, uint8_t col, uint8_t row)
 {
   setCursor(col, row);
@@ -127,7 +132,25 @@ void OLedI2C::sendString(const char *String, uint8_t col, uint8_t row)
     i++;
   }
 }
+*/
+// ULTRA SZYBKI ZAPIS BLOKOWY: Otwiera sesję I2C tylko RAZ na cały tekst
+void OLedI2C::sendString(const char *String, uint8_t col, uint8_t row)
+{
+  setCursor(col, row);
+  
+  Wire.beginTransmission(OLED_Address);
+  Wire.write(OLED_Data_Mode); 
+  
+  unsigned char i = 0;
+  while(String[i])
+  {
+    Wire.write(String[i]); 
+    i++;
+  }
+  Wire.endTransmission();
+}
 
+/*
 void OLedI2C::print(const char *String)
 {
   unsigned char i=0;
@@ -136,6 +159,21 @@ void OLedI2C::print(const char *String)
     sendData(String[i]);  // *** Send String to OLED
     i++;
   }
+}
+*/
+// ULTRA SZYBKI ZAPIS BLOKOWY: Przesyłanie strumieniowe bez narzutu START/STOP
+void OLedI2C::print(const char *String)
+{
+  Wire.beginTransmission(OLED_Address);
+  Wire.write(OLED_Data_Mode);
+  
+  unsigned char i = 0;
+  while(String[i])
+  {
+    Wire.write(String[i]);  
+    i++;
+  }
+  Wire.endTransmission();
 }
 
 void OLedI2C::sendData(unsigned char data)
@@ -146,21 +184,87 @@ void OLedI2C::sendData(unsigned char data)
   Wire.endTransmission();                 // **** End I2C 
 }
 
-void OLedI2C::scrollString(char* message, byte row, unsigned int time)//written by Nathan Chantrell http://nathan.chantrell.net/
+void OLedI2C::printBytes(const uint8_t *data, uint8_t length)
+{
+  Wire.beginTransmission(OLED_Address);
+  Wire.write(OLED_Data_Mode);
+  for (uint8_t i = 0; i < length; i++)
+  {
+    Wire.write(data[i]);
+  }
+  Wire.endTransmission();
+}
+
+void OLedI2C::printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f, uint8_t sepF)
+{
+  Wire.beginTransmission(OLED_Address);
+  Wire.write(OLED_Data_Mode);
+
+  uint8_t i = 0;
+  while(m[i]) { Wire.write(m[i++]); }
+  Wire.write(sepM); // separator minut (np. ':')
+
+  i = 0;
+  while(s[i]) { Wire.write(s[i++]); }
+  Wire.write(sepS); // separator sekund (np. '.')
+
+  i = 0;
+  while(f[i]) { Wire.write(f[i++]); }
+  Wire.write(sepF); // separator ramek (np. ' ')
+
+  Wire.endTransmission();
+}
+
+void OLedI2C::printTrackInfo(const char* tn, const char* tm, const char* ts, const char* tf, 
+                             uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t frameChar, uint8_t spaceChar)
+{
+  Wire.beginTransmission(OLED_Address);
+  Wire.write(OLED_Data_Mode);
+  
+  uint8_t i;
+
+  // 1. Numer ścieżki (TN) + separator
+  i = 0; while(tn[i]) { Wire.write(tn[i++]); }
+  if (tn[0] == ' ' && tn[1] == ' ') { Wire.write(spaceChar); }
+  else { Wire.write(trackNrChar); }
+  Wire.write(spaceChar); // Stała spacja po utworzeniu formatu ścieżki
+
+  // 2. Minuty (TM) + separator
+  i = 0; while(tm[i]) { Wire.write(tm[i++]); }
+  if (tm[0] == ' ' && tm[1] == ' ') { Wire.write(spaceChar); }
+  else { Wire.write(minChar); }
+
+  // 3. Sekundy (TS) + separator
+  i = 0; while(ts[i]) { Wire.write(ts[i++]); }
+  if (ts[0] == ' ' && ts[1] == ' ') { Wire.write(spaceChar); }
+  else { Wire.write(secChar); }
+
+  // 4. Ramki (TF) + separator
+  i = 0; while(tf[i]) { Wire.write(tf[i++]); }
+  if (tf[0] == ' ' && tf[1] == ' ') { Wire.write(spaceChar); }
+  else { Wire.write(frameChar); }
+
+  Wire.endTransmission();
+}
+
+void OLedI2C::scrollString(const char* message, byte row, unsigned int time)
 { 
-  char buffer[16];
-  for (byte i=0; i<strlen(message)+16; i++)
+  char buffer[17];
+  size_t msgLen = strlen(message);
+
+  for (byte i=0; i<msgLen+16; i++)
   {
     byte pos = i+1;
     for (byte j=0; j<16; j++)
     {
-      if ((pos<16)||(pos>strlen(message)+15))
-      { // pad and trail with blank spaces
+      if ((pos<16)||(pos>msgLen+15))
+      { 
         buffer[j]=' ';
       }
       else buffer[j]=message[pos-16];
       pos++;
     }
+    buffer[16] = '\0';
     sendString(buffer, 0, row);
     delay(time);
   }
@@ -179,4 +283,5 @@ void OLedI2C::createChar(uint8_t location, uint8_t charmap[]) {
   }
   Wire.endTransmission();
 }
+
 

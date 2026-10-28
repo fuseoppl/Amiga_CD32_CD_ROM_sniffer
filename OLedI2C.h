@@ -12,7 +12,7 @@
 #define OLedI2C_h	
 #include "Arduino.h"
 #include "Wire.h"
-
+/*
 class OLedI2C {
 public:
 		OLedI2C();
@@ -29,5 +29,31 @@ public:
 		void lcdOn();
 		void setContrast(unsigned char contrast); // contrast should be the hex value between 0x00 and 0xFF
 		void createChar(uint8_t, uint8_t[]);
+};
+#endif
+*/
+/*
+	OLedI2C.h - Zoptymalizowana wersja dla CD32 Sniffer
+*/
+
+class OLedI2C {
+public:
+		OLedI2C();
+		~OLedI2C();
+		void init();
+		void sendCommand(unsigned char command); 
+		void print(const char *String);
+		void printBytes(const uint8_t *data, uint8_t length);
+		void printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f, uint8_t sepF);
+		void printTrackInfo(const char* tn, const char* tm, const char* ts, const char* tf, uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t frameChar, uint8_t spaceChar);
+		void sendString(const char *String, uint8_t col, uint8_t row); 
+		void sendData(unsigned char data);
+		void clearLcd();
+		void setCursor(uint8_t col, uint8_t row); 
+		void scrollString(const char* message, byte row, unsigned int time); 
+		void lcdOff();
+		void lcdOn();
+		void setContrast(unsigned char contrast); 
+		void createChar(uint8_t location, uint8_t charmap[]);
 };
 #endif
