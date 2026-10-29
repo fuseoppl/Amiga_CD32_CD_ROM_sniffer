@@ -8,6 +8,8 @@
 //https://www.tztstore.com/goods/show-6267.html
 //TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
 //operates in the 3.3V to 5.0V range
+//Arduino Nano V3.0, china clone https://pl.aliexpress.com/item/1005007492500542.html
+//In the Arduino IDE, please select: Arduino Nano (old boot-loader, unless you update)
 
 //I was wondering why the CD drive has three microcontroller pins connected to handle the IF_DATA signal, and now it's all clear to me.
 //The CD drive operates in MASTER mode.
@@ -19,7 +21,7 @@
 //So the third pin in the CD drive's microcontroller is simply an interrupt input, activated when the CD drive microcontroller does not send data to Akiko.
 //After detecting a signal change on this pin, the CD drive's microcontroller enables the SPI interface and begins transmitting the clock signal.
 //It all makes sense now, although in my opinion it was a poor solution, but that doesn't matter now, what matters is that in the microcontroller that will support the new CD drive,
-//the MISO, MOSI and INT pins need to be connected together. 
+//the MISO, MOSI and INT pins need to be connected together.
 #include "pins_arduino.h"
 #include "OLedI2C.h"
 
@@ -219,13 +221,13 @@ void loop (void)
     else if ((read_byte[0] & 0xF) == 0x5 && read_byte[1] == 0x0 && read_byte[2] == (uint8_t)~read_byte[0] && (read_byte[3] & 0xF) == 0x7 && read_byte[4] == (uint8_t)~read_byte[3])
     {
       lcd.setCursor(0,0);
-      // Wysyła bajty od 7 do 14 w jednej paczce I2C (długość: 15 - 7 = 8)
+      // Sends bytes 7 to 14 in one I2C packet (length: 15 - 7 = 8)
       lcd.printBytes(&read_byte[7], 8);
 
       lcd.print(firmwareRevision);
 
       lcd.setCursor(0,1);
-      // Wysyła bajty od 15 do 24 w jednej paczce I2C (długość: 25 - 15 = 10)
+      // Sends bytes 15 to 24 in one I2C packet (length: 25 - 15 = 10)
       lcd.printBytes(&read_byte[15], 10);
     }
     //Set Play Audio

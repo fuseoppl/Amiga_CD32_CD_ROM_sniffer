@@ -13,29 +13,6 @@
 #define OLedI2C_h	
 #include "Arduino.h"
 #include "Wire.h"
-/*
-class OLedI2C {
-public:
-		OLedI2C();
-		~OLedI2C();
-		void init();
-		void sendCommand(unsigned char command); // unsigned char
-		void print(const char *String); // *String
-		void sendString(const char *String, uint8_t col, uint8_t row); // *String, column, row
-		void sendData(unsigned char data);
-		void clearLcd();
-		void setCursor(uint8_t, uint8_t); // column, row
-		void scrollString(char* message, byte row, unsigned int time); //written by Nathan Chantrell http://nathan.chantrell.net/
-		void lcdOff();
-		void lcdOn();
-		void setContrast(unsigned char contrast); // contrast should be the hex value between 0x00 and 0xFF
-		void createChar(uint8_t, uint8_t[]);
-};
-#endif
-*/
-/*
-	OLedI2C.h - Zoptymalizowana wersja dla CD32 Sniffer
-*/
 
 class OLedI2C {
 public:
