@@ -1,4 +1,5 @@
 /*
+Custom version of the library:
 This is my first Library to make writing to the OLED 1602
 Display much easier, the display is based on the SSD1311.
 The display has 16 characters and 2 lines.
@@ -87,7 +88,7 @@ void OLedI2C::clearLcd()
 {
   sendCommand(0x01);
   
-  delay(2); // Komenda czyszczenia DDRAM wymaga chwili przerwy na kontrolerze
+  delay(2); // The DDRAM-clearing command requires a brief pause on the controller.
 }
 
 void OLedI2C::lcdOff()
@@ -121,19 +122,6 @@ void OLedI2C::sendCommand(unsigned char command)
   sendCommand(0x28);
 }
 
-/*
-void OLedI2C::sendString(const char *String, uint8_t col, uint8_t row)
-{
-  setCursor(col, row);
-  unsigned char i=0;
-  while(String[i])
-  {
-    sendData(String[i]);  // *** Show String to OLED
-    i++;
-  }
-}
-*/
-// ULTRA SZYBKI ZAPIS BLOKOWY: Otwiera sesję I2C tylko RAZ na cały tekst
 void OLedI2C::sendString(const char *String, uint8_t col, uint8_t row)
 {
   setCursor(col, row);
@@ -150,18 +138,6 @@ void OLedI2C::sendString(const char *String, uint8_t col, uint8_t row)
   Wire.endTransmission();
 }
 
-/*
-void OLedI2C::print(const char *String)
-{
-  unsigned char i=0;
-  while(String[i])
-  {
-    sendData(String[i]);  // *** Send String to OLED
-    i++;
-  }
-}
-*/
-// ULTRA SZYBKI ZAPIS BLOKOWY: Przesyłanie strumieniowe bez narzutu START/STOP
 void OLedI2C::print(const char *String)
 {
   Wire.beginTransmission(OLED_Address);
@@ -202,15 +178,15 @@ void OLedI2C::printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS
 
   uint8_t i = 0;
   while(m[i]) { Wire.write(m[i++]); }
-  Wire.write(sepM); // separator minut (np. ':')
+  Wire.write(sepM); // minute separator (e.g., ':')
 
   i = 0;
   while(s[i]) { Wire.write(s[i++]); }
-  Wire.write(sepS); // separator sekund (np. '.')
+  Wire.write(sepS); // seconds separator (e.g., '.')
 
   i = 0;
   while(f[i]) { Wire.write(f[i++]); }
-  Wire.write(sepF); // separator ramek (np. ' ')
+  Wire.write(sepF); // frame separator (e.g., ' ')
 
   Wire.endTransmission();
 }
@@ -223,23 +199,23 @@ void OLedI2C::printTrackInfo(const char* tn, const char* tm, const char* ts, con
   
   uint8_t i;
 
-  // 1. Numer ścieżki (TN) + separator
+  // Track number (TN) + separator
   i = 0; while(tn[i]) { Wire.write(tn[i++]); }
   if (tn[0] == ' ' && tn[1] == ' ') { Wire.write(spaceChar); }
   else { Wire.write(trackNrChar); }
-  Wire.write(spaceChar); // Stała spacja po utworzeniu formatu ścieżki
+  Wire.write(spaceChar); // Fixed space after the track number
 
-  // 2. Minuty (TM) + separator
+  // Minutes (TM) + separator
   i = 0; while(tm[i]) { Wire.write(tm[i++]); }
   if (tm[0] == ' ' && tm[1] == ' ') { Wire.write(spaceChar); }
   else { Wire.write(minChar); }
 
-  // 3. Sekundy (TS) + separator
+  // Seconds (TS) + separator
   i = 0; while(ts[i]) { Wire.write(ts[i++]); }
   if (ts[0] == ' ' && ts[1] == ' ') { Wire.write(spaceChar); }
   else { Wire.write(secChar); }
 
-  // 4. Ramki (TF) + separator
+  // Frames (TF) + separator
   i = 0; while(tf[i]) { Wire.write(tf[i++]); }
   if (tf[0] == ' ' && tf[1] == ' ') { Wire.write(spaceChar); }
   else { Wire.write(frameChar); }

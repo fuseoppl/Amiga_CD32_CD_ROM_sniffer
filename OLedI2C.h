@@ -1,4 +1,5 @@
 /*
+	Custom version of the library
 	OLedI2C.h
 	OLED 1602 Library for the I2C
 	OLED display from WIDE.HK

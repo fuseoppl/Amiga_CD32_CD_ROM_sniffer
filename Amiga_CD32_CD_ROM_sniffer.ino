@@ -1,4 +1,4 @@
-//CD32 Akiko-CDROM IF command sniffer and track display
+//CD32 Akiko-CDROM track display
 //Arduino pin 13 to Amiga CD32 IF_CLK
 //Arduino pin 11 to Amiga CD32 IF_DATA
 //Arduino pin  3 to Amiga CD32 IF_DIR
@@ -7,6 +7,7 @@
 //The display must be with I2C communication!
 //https://www.tztstore.com/goods/show-6267.html
 //TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
+//operates in the 3.3V to 5.0V range
 
 //I was wondering why the CD drive has three microcontroller pins connected to handle the IF_DATA signal, and now it's all clear to me.
 //The CD drive operates in MASTER mode.
@@ -65,14 +66,14 @@ uint8_t totalTrack  = 99;
 
 const char* H0 = ""; //Header row 0
 const char* H1 = ""; //Header row 1
-char TN[3] = ""; //Track number
-char TM[3] = ""; //Track minutes
-char TS[3] = ""; //Track seconds
-char TF[3] = ""; //Track frames
-char DX[3] = ""; //Disk  index ???
-char DM[3] = ""; //Disk  minutes
-char DS[3] = ""; //Disk  seconds
-char DF[3] = ""; //Disk  frames
+char TN[3]     = ""; //Track number
+char TM[3]     = ""; //Track minutes
+char TS[3]     = ""; //Track seconds
+char TF[3]     = ""; //Track frames
+char DX[3]     = ""; //Disk  index ???
+char DM[3]     = ""; //Disk  minutes
+char DS[3]     = ""; //Disk  seconds
+char DF[3]     = ""; //Disk  frames
 
 OLedI2C lcd;
 
