@@ -4,6 +4,7 @@
 //Arduino pin  3 to Amiga CD32 IF_DIR
 //Arduino GND    to Amiga CD32 GND
 //Arduino RST    to Amiga CD32 RST
+//The back of the display and the ribbon cable must be shielded.
 //The display must be with I2C communication!
 //https://www.tztstore.com/goods/show-6267.html
 //TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
@@ -33,49 +34,50 @@
 const char hexChars[]          = "0123456789ABCDEF";
 uint16_t bufforUint16;
 
-const char firmwareRevision[]  = "     5.0"; //Firmware revision
-const char STRING_DISK_AUDIO[] = "AUDIO   "; //Disk type audio string
-const char STRING_DISK_DATA[]  = "DATA    "; //Disk type data string
-const char STRING_OPEN[]       = "OPEN    "; //Open string
-const char STRING_CLOSE[]      = "CLOSE   "; //Close string
-const char STRING_PLAY[]       = "PLAY    "; //Stop string
-const char STRING_STOP[]       = "STOP    "; //Stop string
-const char STRING_PAUSE[]      = "PAUSE   "; //Stop string
-const char STRING_SET_PLAY[]   = "SET PLAY"; //Set Play string
+const char firmwareRevision[]     = "     5.1"; //Firmware revision
+const char STRING_DISK_AUDIO[]    = "AUDIO   "; //Disk type audio string
+const char STRING_DISK_DATA[]     = "DATA    "; //Disk type data string
+const char STRING_OPEN[]          = "OPEN    "; //Open string
+const char STRING_CLOSE[]         = "CLOSE   "; //Close string
+const char STRING_PLAY[]          = "PLAY    "; //Stop string
+const char STRING_STOP[]          = "STOP    "; //Stop string
+const char STRING_PAUSE[]         = "PAUSE   "; //Stop string
+const char STRING_SET_PLAY[]      = "SET PLAY"; //Set Play string
 
-uint8_t STRING_TRACK_NR        = 0x74;       //Track string   0x74 = 't'
-uint8_t STRING_MINUTES         = 0x3A;       //Minutes string 0x27 = ''' , 0x3A = ':'
-uint8_t STRING_SECONDS         = 0x2E;       //Seconds string 0x22 = '"' , 0x2E = '.'
-uint8_t STRING_FRAMES          = 0x20;       //Frames string  0x66 = 'f' , 0x20 = ' '
-uint8_t STRING_SPACE           = 0x20;       //Space string   0x20 = ' '
+uint8_t STRING_TRACK_NR           = 0x74;       //Track string   0x74 = 't'
+uint8_t STRING_MINUTES            = 0x3A;       //Minutes string 0x27 = ''' , 0x3A = ':'
+uint8_t STRING_SECONDS            = 0x2E;       //Seconds string 0x22 = '"' , 0x2E = '.'
+uint8_t STRING_FRAMES             = 0x20;       //Frames string  0x66 = 'f' , 0x20 = ' '
+uint8_t STRING_SPACE              = 0x20;       //Space string   0x20 = ' '
 
-const char STRING_X1[]         = " x1 ";     //Speed x1 string
-const char STRING_X2[]         = " x2 ";     //Speed x2 string
+const char STRING_X1[]            = " x1 ";     //Speed x1 string
+const char STRING_X2[]            = " x2 ";     //Speed x2 string
 
-const char STRING_H0_CLEAR[]   = "        "; //Clear Header row 0
-const char STRING_H1_CLEAR[]   = "    ";     //Clear Header row 1
+const char STRING_H0_CLEAR[]      = "        "; //Clear Header row 0
+const char STRING_H1_CLEAR[]      = "    ";     //Clear Header row 1
 
 volatile unsigned long start_time = 0;
 volatile uint8_t position         = 0;
 volatile uint8_t read_byte[255];
+volatile uint8_t latestTN         = 0;
 
-uint8_t mediaType   = 0;
-uint8_t setPlayType = 0;
-uint8_t playMode    = 0;
-uint8_t playSpeed   = 0;
-uint8_t indexNR     = 0;
-uint8_t totalTrack  = 99;
+uint8_t mediaType                 = 0;
+//uint8_t setPlayType               = 0;
+uint8_t playMode                  = 0;
+uint8_t playSpeed                 = 0;
+//uint8_t indexNR                   = 0;
+uint8_t totalTrack                = 0x99;
 
-const char* H0 = ""; //Header row 0
-const char* H1 = ""; //Header row 1
-char TN[3]     = ""; //Track number
-char TM[3]     = ""; //Track minutes
-char TS[3]     = ""; //Track seconds
-char TF[3]     = ""; //Track frames
-char DX[3]     = ""; //Disk  index ???
-char DM[3]     = ""; //Disk  minutes
-char DS[3]     = ""; //Disk  seconds
-char DF[3]     = ""; //Disk  frames
+const char* H0                    = ""; //Header row 0
+const char* H1                    = ""; //Header row 1
+char TN[3]                        = ""; //Track number
+char TM[3]                        = ""; //Track minutes
+char TS[3]                        = ""; //Track seconds
+char TF[3]                        = ""; //Track frames
+//char DX[3]                        = ""; //Disk  index ???
+char DM[3]                        = ""; //Disk  minutes
+char DS[3]                        = ""; //Disk  seconds
+char DF[3]                        = ""; //Disk  frames
 
 OLedI2C lcd;
 
@@ -96,7 +98,7 @@ void setup (void)
   ToHex(50, TM);
   ToHex(67, TS);
   ToHex(84, TF);
-  ToHex(101, DX);
+//  ToHex(101, DX);
   ToHex(118, DM);
   ToHex(135, DS);
   ToHex(152, DF);
@@ -151,14 +153,14 @@ void loop (void)
   {
     //detachInterrupt(digitalPinToInterrupt(IF_DIR));
     //bitClear(SPCR, SPIE); //SPI interrupts off
-    bitClear(SPCR, SPE); //SPI off
+//    bitClear(SPCR, SPE); //SPI off
     start_time = 0;
 
     //Play packet
     if ((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && (read_byte[3] == 0x2 || read_byte[3] == 0x3) && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])//((read_byte[0] & 0xF) == 0x6 && read_byte[1] == (uint8_t)~read_byte[0] && read_byte[2] == read_byte[0] && TwoComplementChecksum8(read_byte, 16, 2) == read_byte[17])
     {
       playMode = read_byte[3]; //0x2 = Play, 0x3 = Pause
-      indexNR  = read_byte[7];
+      //indexNR  = read_byte[7];
 
       if      (playMode  == 0x2)  H0 = STRING_PLAY;
       else if (playMode  == 0x3)  H0 = STRING_PAUSE;
@@ -171,17 +173,26 @@ void loop (void)
       ToHex(read_byte[6], TN);
       ToHex(read_byte[8], TM);
       ToHex(read_byte[9], TS);
-      byte _TF_ = read_byte[10];
-      bufforUint16 = ((((_TF_ >> 4) * 10) + (_TF_ & 0x0F)) * 4 + 1) / 3;
-      sprintf(TF, "%02d", bufforUint16);
+      ToHex(read_byte[10], TF);
+      /*
+      bufforUint16 = ((((read_byte[10] >> 4) * 10) + (read_byte[10] & 0x0F)) * 4 - 1) / 3;
+      bufforUint16 = bufforUint16 / 10;
+      sprintf(TF, "%d", bufforUint16);
+      */
       ToHex(read_byte[12], DM);
       ToHex(read_byte[13], DS);
-      byte _DF_ = read_byte[14];
-      bufforUint16 = ((((_DF_ >> 4) * 10) + (_DF_ & 0x0F)) * 4 + 1) / 3;
-      sprintf(DF, "%02d", bufforUint16);
+      ToHex(read_byte[14], DF);
+      /*
+      bufforUint16 = ((((read_byte[14] >> 4) * 10) + (read_byte[14] & 0x0F)) * 4 - 1) / 3;
+      bufforUint16 = bufforUint16 / 10;
+      sprintf(DF, "%d", bufforUint16);
+      */
 
-      if (read_byte[6] <= totalTrack && read_byte[6] > 0)
-        RedrawLCD();
+      
+
+      if (latestTN == read_byte[6] && (read_byte[6] & 0x0F) <= 9 && read_byte[6] <= 0x99 && read_byte[6] <= totalTrack && read_byte[6] > 0) RedrawLCD();
+
+      latestTN = read_byte[6];
     }
     //Read content
     else if (read_byte[0] == 0x6 && read_byte[1] == 0xA && read_byte[2] == 0x0 && read_byte[4] == 0x0 && read_byte[5] > 0x9F && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15]) //(read_byte[0] == 0x6 && read_byte[1] == 0xA && read_byte[2] == 0x0 && read_byte[4] == 0x0 && read_byte[5] > 0x9F && TwoComplementChecksum8(read_byte, 14, 0) == read_byte[15])
@@ -194,15 +205,21 @@ void loop (void)
 
       H1 = STRING_H1_CLEAR;
 
-      if      (read_byte[5] == 0xA0) //Disk index ???
-      {
-        indexNR = read_byte[9];
-      }
-      else if (read_byte[5] == 0xA1) //Total disk track
+      //if      (read_byte[5] == 0xA0) //Disk index ???
+      //{
+        //indexNR = read_byte[9];
+      //}
+      //else 
+      if (read_byte[5] == 0xA1) //Total disk track
       {
         totalTrack = read_byte[10];
         if (totalTrack == 0) totalTrack = 0x99;
         ToHex(read_byte[10], TN);
+
+#if defined(DEBUGGER)
+  ToHex(position, TN);
+#endif
+
       }
       else if (read_byte[5] == 0xA2) //Total disk time
       {
@@ -234,17 +251,25 @@ void loop (void)
     else if ((read_byte[0] & 0xF) == 0x5 && read_byte[1] == 0x0 && read_byte[2] == (uint8_t)~read_byte[0] && (read_byte[3] & 0xF) == 0x5 && read_byte[4] == 0x1 && read_byte[5] == (uint8_t)~(read_byte[2]+read_byte[4]) && (read_byte[6] & 0xF) == 0x4)
     {
       readSetPlay(read_byte, 7);
+      RedrawLCD();
     }
     //Set Play Data
     else if ((read_byte[0] & 0xF) == 0x5 && read_byte[1] == 0x0 && read_byte[2] == (uint8_t)~read_byte[0] && (read_byte[8] & 0xF) == 0x5 && read_byte[9] == 0x1 && read_byte[10] == (uint8_t)~(read_byte[8]+read_byte[9]) && (read_byte[11] & 0xF) == 0x4)
     {
       readSetPlay(read_byte, 12);
+      RedrawLCD();
     }
     //Close
     else if (read_byte[0] == 0xA && read_byte[1] == 0x1 && read_byte[2] == 0xF4 && (read_byte[3] & 0xF) == 0x5 && read_byte[4] == 0x1 && read_byte[5] == (uint8_t)~(read_byte[3] + read_byte[4]))//(read_byte[0] == 0xA && read_byte[1] == 0x1 && read_byte[2] == 0xF4 && (read_byte[3] & 0xF) == 0x5 && read_byte[4] == 0x1 && read_byte[5] == (uint8_t)~(read_byte[3] + read_byte[4]) && TwoComplementChecksum8(read_byte, 17, 6) == read_byte[18])
     {
       lcd.clearLcd();
       lcd.print(STRING_CLOSE);
+    }
+    //Stop
+    else if ((read_byte[0] & 0xF) == 0x5 && read_byte[1] == 0x0 && read_byte[2] == (uint8_t)~read_byte[0] && (read_byte[3] & 0xF) == 0x2 && read_byte[4] == (uint8_t)~read_byte[3])
+    {
+      lcd.clearLcd();
+      lcd.print(STRING_STOP);
     }
     //Open
     else if (read_byte[0] == 0xA && read_byte[1] == 0x0 && read_byte[2] == 0xF5)
@@ -258,7 +283,7 @@ void loop (void)
     
     bitSet(EIFR, INTF0); // clear interrupt register INT0
     //attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR1, RISING);
-    bitSet(SPCR, SPE);  //SPI on
+//    bitSet(SPCR, SPE);  //SPI on
     //bitSet(SPCR, SPIE); //SPI interrupts off
   }
 }
@@ -267,11 +292,13 @@ void RedrawLCD()
 {
   lcd.setCursor(0,0);
   lcd.print(H0);
-  lcd.printTime(DM, STRING_MINUTES, DS, STRING_SECONDS, DF, STRING_FRAMES);
+  lcd.printTime(DM, STRING_MINUTES, DS, STRING_SECONDS, DF);
+  //lcd.printTime(DM, STRING_MINUTES, DS, STRING_SECONDS, DF, STRING_FRAMES);
 
   lcd.setCursor(0,1);
   lcd.print(H1);
-  lcd.printTrackInfo(TN, TM, TS, TF, STRING_TRACK_NR, STRING_MINUTES, STRING_SECONDS, STRING_FRAMES, STRING_SPACE);
+  lcd.printTrackInfo(TN, TM, TS, TF, STRING_TRACK_NR, STRING_MINUTES, STRING_SECONDS, STRING_SPACE);
+  //lcd.printTrackInfo(TN, TM, TS, TF, STRING_TRACK_NR, STRING_MINUTES, STRING_SECONDS, STRING_FRAMES, STRING_SPACE);
 }
 
 //input data, end point, starting point
@@ -288,7 +315,7 @@ uint8_t TwoComplementChecksum8(const byte *data, uint8_t endPoint, uint8_t start
 //input data, starting point
 void readSetPlay (const byte *data, uint8_t startPoint)
 {
-  setPlayType = read_byte[startPoint+6];
+//  setPlayType = read_byte[startPoint+6];
   playSpeed   = read_byte[startPoint+7];
 
   H0 = STRING_SET_PLAY;
@@ -306,7 +333,7 @@ void readSetPlay (const byte *data, uint8_t startPoint)
   ToHex(read_byte[startPoint+4], DS);
   ToHex(read_byte[startPoint+5], DF);
 
-  RedrawLCD();
+  //RedrawLCD();
 }
 
 void ToHex(uint8_t readByte, char* output) {

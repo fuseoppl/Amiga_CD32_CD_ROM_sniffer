@@ -171,7 +171,7 @@ void OLedI2C::printBytes(const uint8_t *data, uint8_t length)
   Wire.endTransmission();
 }
 
-void OLedI2C::printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f, uint8_t sepF)
+void OLedI2C::printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f)//(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f, uint8_t sepF)
 {
   Wire.beginTransmission(OLED_Address);
   Wire.write(OLED_Data_Mode);
@@ -186,13 +186,13 @@ void OLedI2C::printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS
 
   i = 0;
   while(f[i]) { Wire.write(f[i++]); }
-  Wire.write(sepF); // frame separator (e.g., ' ')
+  //Wire.write(sepF); // frame separator (e.g., ' ')
 
   Wire.endTransmission();
 }
 
 void OLedI2C::printTrackInfo(const char* tn, const char* tm, const char* ts, const char* tf, 
-                             uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t frameChar, uint8_t spaceChar)
+                             uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t spaceChar)//uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t frameChar, uint8_t spaceChar)
 {
   Wire.beginTransmission(OLED_Address);
   Wire.write(OLED_Data_Mode);
@@ -217,8 +217,8 @@ void OLedI2C::printTrackInfo(const char* tn, const char* tm, const char* ts, con
 
   // Frames (TF) + separator
   i = 0; while(tf[i]) { Wire.write(tf[i++]); }
-  if (tf[0] == ' ' && tf[1] == ' ') { Wire.write(spaceChar); }
-  else { Wire.write(frameChar); }
+  //if (tf[0] == ' ' && tf[1] == ' ') { Wire.write(spaceChar); }
+  //else { Wire.write(frameChar); }
 
   Wire.endTransmission();
 }

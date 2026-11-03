@@ -6,7 +6,7 @@
 * Arduino pin  3 to Amiga CD32 IF_DIR
 * Arduino GND    to Amiga CD32 GND
 * Arduino RST    to Amiga CD32 RST
-* The display must be with I2C communication!
+* The back of the display and the ribbon cable must be shielded.
 * https://www.tztstore.com/goods/show-6267.html
 * TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 5V For Arduino
 * The display must be with I2C communication!
