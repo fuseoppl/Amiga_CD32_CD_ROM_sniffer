@@ -7,8 +7,7 @@
 //The back of the display and the ribbon cable must be shielded.
 //The display must be with I2C communication!
 //https://www.tztstore.com/goods/show-6267.html
-//TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 3.3V For Arduino
-//operates in the 3.3V to 5.0V range
+//TZT 2.26 Inch 4PIN White OLED Screen Module IPS 1602 Character OLED Screen KS0066 Drive IC IIC Interface 5V For Arduino
 //Arduino Nano V3.0, china clone https://pl.aliexpress.com/item/1005007492500542.html
 //In the Arduino IDE, please select: Arduino Nano (old boot-loader, unless you update)
 
@@ -42,7 +41,7 @@ const char STRING_CLOSE[]         = "CLOSE   "; //Close string
 const char STRING_PLAY[]          = "PLAY    "; //Stop string
 const char STRING_STOP[]          = "STOP    "; //Stop string
 const char STRING_PAUSE[]         = "PAUSE   "; //Stop string
-const char STRING_SET_PLAY[]      = "SET PLAY"; //Set Play string
+const char STRING_SET_PLAY[]      = "JUMP TO "; //Set Play string
 
 uint8_t STRING_TRACK_NR           = 0x74;       //Track string   0x74 = 't'
 uint8_t STRING_MINUTES            = 0x3A;       //Minutes string 0x27 = ''' , 0x3A = ':'
@@ -130,9 +129,6 @@ ISR (SPI_STC_vect)
 void ISR1()
 {
   start_time = millis();
-// clear SPI buffer
-  //bitClear(SPCR, SPE); //SPI off
-  //bitSet(SPCR, SPE);   //SPI on  
 }
 
 //not needed, all you need is a change in the DORD SPI register
@@ -149,10 +145,8 @@ void loop (void)
 {
   // 1 ms have passed since the last change of the IF_DIR signal, maybe nothing will happen,
   // so we print the collected data
-  if (start_time > 0 && millis() > start_time + 1)//(IF_DIR_int_occurred && millis() > start_time + 2)
+  if (start_time > 0 && millis() > start_time + 1)
   {
-    //detachInterrupt(digitalPinToInterrupt(IF_DIR));
-    //bitClear(SPCR, SPIE); //SPI interrupts off
 //    bitClear(SPCR, SPE); //SPI off
     start_time = 0;
 
@@ -174,21 +168,9 @@ void loop (void)
       ToHex(read_byte[8], TM);
       ToHex(read_byte[9], TS);
       ToHex(read_byte[10], TF);
-      /*
-      bufforUint16 = ((((read_byte[10] >> 4) * 10) + (read_byte[10] & 0x0F)) * 4 - 1) / 3;
-      bufforUint16 = bufforUint16 / 10;
-      sprintf(TF, "%d", bufforUint16);
-      */
       ToHex(read_byte[12], DM);
       ToHex(read_byte[13], DS);
-      ToHex(read_byte[14], DF);
-      /*
-      bufforUint16 = ((((read_byte[14] >> 4) * 10) + (read_byte[14] & 0x0F)) * 4 - 1) / 3;
-      bufforUint16 = bufforUint16 / 10;
-      sprintf(DF, "%d", bufforUint16);
-      */
-
-      
+      ToHex(read_byte[14], DF);      
 
       if (latestTN == read_byte[6] && (read_byte[6] & 0x0F) <= 9 && read_byte[6] <= 0x99 && read_byte[6] <= totalTrack && read_byte[6] > 0) RedrawLCD();
 
@@ -215,11 +197,6 @@ void loop (void)
         totalTrack = read_byte[10];
         if (totalTrack == 0) totalTrack = 0x99;
         ToHex(read_byte[10], TN);
-
-#if defined(DEBUGGER)
-  ToHex(position, TN);
-#endif
-
       }
       else if (read_byte[5] == 0xA2) //Total disk time
       {
@@ -282,9 +259,7 @@ void loop (void)
 //    memset(read_byte, 0, sizeof read_byte);
     
     bitSet(EIFR, INTF0); // clear interrupt register INT0
-    //attachInterrupt(digitalPinToInterrupt(IF_DIR), ISR1, RISING);
 //    bitSet(SPCR, SPE);  //SPI on
-    //bitSet(SPCR, SPIE); //SPI interrupts off
   }
 }
 
@@ -293,12 +268,10 @@ void RedrawLCD()
   lcd.setCursor(0,0);
   lcd.print(H0);
   lcd.printTime(DM, STRING_MINUTES, DS, STRING_SECONDS, DF);
-  //lcd.printTime(DM, STRING_MINUTES, DS, STRING_SECONDS, DF, STRING_FRAMES);
 
   lcd.setCursor(0,1);
   lcd.print(H1);
   lcd.printTrackInfo(TN, TM, TS, TF, STRING_TRACK_NR, STRING_MINUTES, STRING_SECONDS, STRING_SPACE);
-  //lcd.printTrackInfo(TN, TM, TS, TF, STRING_TRACK_NR, STRING_MINUTES, STRING_SECONDS, STRING_FRAMES, STRING_SPACE);
 }
 
 //input data, end point, starting point

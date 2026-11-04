@@ -23,9 +23,7 @@ public:
 		void print(const char *String);
 		void printBytes(const uint8_t *data, uint8_t length);
 		void printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f);
-		//void printTime(const char* m, uint8_t sepM, const char* s, uint8_t sepS, const char* f, uint8_t sepF);
 		void printTrackInfo(const char* tn, const char* tm, const char* ts, const char* tf, uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t spaceChar);
-		//void printTrackInfo(const char* tn, const char* tm, const char* ts, const char* tf, uint8_t trackNrChar, uint8_t minChar, uint8_t secChar, uint8_t frameChar, uint8_t spaceChar);
 		void sendString(const char *String, uint8_t col, uint8_t row); 
 		void sendData(unsigned char data);
 		void clearLcd();
